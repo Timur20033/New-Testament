@@ -1,10 +1,16 @@
 import re
 
 
-def clean(text):
+def clean_kon(text):
     text = re.sub(r'([^\n\d])(\d+ )', r'\1\n\2', text)
     text = re.sub(r'([^\n])(\n.+\n\(.+\))', r'\1\n\2', text)
     text = re.sub(r'([\.»,;:!?])\w([» ]?\n)', r'\1\2', text)
+    return text
+
+
+def clean_rus(text):
+    text = text.replace('', '').replace('', '')
+    text = text.replace('\n\n\n\n', '\n\n').replace('\n\n\n', '\n\n')
     return text
 
 
@@ -22,20 +28,14 @@ def parallel(text_rus, text_kon):
         return f'{len(lines_rus)} != {len(lines_kon)}'
 
 
-with open('Original texts/Russian New Testament/1. Matthew.txt', 'r', encoding='utf-8') as f:
+with open('Original texts\Russian New Testament/2. Mark.txt', 'r', encoding='utf-8') as f:
     text_rus = f.read()
 
-    text_rus = text_rus.replace('', '').replace('', '').replace('\n\n\n\n', '\n\n').replace('\n\n\n', '\n\n')
+with open('Original texts/Konabere New Testament/2. Mark.txt', 'r', encoding='utf-8') as f:
+    text_kon = f.read()
 
-with open('Original texts/Russian New Testament/1. Matthew.txt', 'w', encoding='utf-8') as f:
-    f.write(text_rus)
-
-
-#with open('rus.txt', 'r', encoding='utf-8') as f:
-#    text_rus = f.read()
-
-#with open('parallel_text.txt', 'w', encoding='utf-8') as f:
-#   f.write(parallel(text_rus, clean(text_kon)))
+with open('Parallel corpus/2. Mark.txt', 'w', encoding='utf-8') as f:
+  f.write(parallel(text_rus, text_kon))
 
 
 
