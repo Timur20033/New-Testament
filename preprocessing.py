@@ -26,23 +26,4 @@ def parallel(text_rus, text_kon):
         return text_kon
     else:
         return f'{len(lines_rus)} != {len(lines_kon)}'
-
-
-with open('Original texts\Russian New Testament/2. Mark.txt', 'r', encoding='utf-8') as f:
-    text_rus = f.read()
-
-with open('Original texts/Konabere New Testament/2. Mark.txt', 'r', encoding='utf-8') as f:
-    text_kon = f.read()
-
-with open('Parallel corpus/2. Mark.txt', 'w', encoding='utf-8') as f:
-  f.write(parallel(text_rus, text_kon))
-
-
-
-
-
-
-
-
-
-
+    
