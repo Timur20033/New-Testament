@@ -1,3 +1,4 @@
+from pathlib import Path
 import re
 
 
@@ -26,4 +27,3 @@ def parallel(text_rus, text_kon):
         return text_kon
     else:
         return f'{len(lines_rus)} != {len(lines_kon)}'
-    
