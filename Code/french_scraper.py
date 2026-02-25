@@ -29,15 +29,11 @@ def get_chapter_links(book_link):
     return chapter_links
 
 
-with open('book_links.txt', 'r', encoding='utf-8') as f:
-    book_links = f.read().split('\n')
+def get_verses(chapter_link):
 
+    page = requests.get(chapter_link, 'lxml')
+    page = BeautifulSoup(page.text)
 
-with open('chapter_links.txt', 'w', encoding='utf-8') as f:
-    for book_link in book_links:
-        chapter_links = get_chapter_links(book_link)
-        for chapter_link in chapter_links:
-            f.write(chapter_link + '\n')
-        f.write('\n')
+    verses = '1' + page.find('div', class_='textBody').find('p').text
 
-
+    return verses
