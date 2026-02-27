@@ -1,5 +1,24 @@
 import re
 import spacy
+from collections import Counter
+import nltk
+from nltk.corpus import wordnet
+
+
+def is_concrete(lemma, pos, lang):
+    hypernyms = []
+    synsets = wordnet.synsets(lemma, pos=pos, lang=lang)
+    for synset in synsets:
+        for path in synset.hypernym_paths():
+            hypernyms.append(path[2].name().split('.')[0])
+    if not hypernyms:
+        return None
+    else:
+        freq_sense = Counter(hypernyms).most_common(1)[0][0]
+        if freq_sense == 'object':
+            return True
+        else:
+            return False
 
 
 def get_cop_det(text):
@@ -25,7 +44,7 @@ def get_cop_det(text):
     return tr_verses
 
 
-def get_nom_de_nom(text):
+def get_NdeN_nref(text):
 
     verses = re.findall(r'\d+[^\d]+>', text)
     kon_ru_fr = {verse: re.findall(r'(.+)>', verse)[0] for verse in verses}
@@ -37,17 +56,20 @@ def get_nom_de_nom(text):
     nom_de_nom = []
     for verse in parsed_verses:
         for idx, token in enumerate(verse):
+            w1 = token.head.head
+            w2 = token.head
             if (token.pos_ == 'ADP' 
                 and token.text in ['de', "d'"] 
-                and token.head.pos_ == 'NOUN' 
-                and token.head.head.pos_ == 'NOUN'
+                and w1.pos_ == 'NOUN' 
+                and w2.pos_ == 'NOUN'
                 and token.head.head.i == idx - 1):
-                if (token.head.i == idx + 1 
-                    and verse not in nom_de_nom):
-                    nom_de_nom.append(verse.text)
-                elif (verse[idx + 1].lemma_ == 'un' 
-                        and verse not in nom_de_nom):
-                    nom_de_nom.append(verse.text)
+                    if is_concrete(w1.lemma_, 'n', 'fra') and is_concrete(w2.lemma_, 'n', 'fra'):
+                        if (w2.i == idx + 1 
+                            and verse not in nom_de_nom):
+                            nom_de_nom.append(verse.text)
+                        elif (verse[idx + 1].lemma_ == 'un' 
+                                and verse not in nom_de_nom):
+                            nom_de_nom.append(verse.text)
 
     nom_de_nom_verses = []
     for k, v in kon_ru_fr.items():
@@ -60,8 +82,6 @@ def get_nom_de_nom(text):
 with open('Parallel corpus/Konabere-Russian-French/United books/New Testament.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 
-with open('Contexts/nom_de_nom.txt', 'w', encoding='utf-8') as f:
-    for verse in get_nom_de_nom(text):
+with open('Contexts/Noun + de + noun (non-referential).txt', 'w', encoding='utf-8') as f:
+    for verse in get_NdeN_nref(text):
         f.write(verse + '\n\n')
-
-
