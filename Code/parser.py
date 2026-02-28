@@ -1,8 +1,26 @@
 import re
 import spacy
 from collections import Counter
-import nltk
 from nltk.corpus import wordnet
+
+
+def extract_verses(text):
+    verses = re.findall(r'\d+[^\d]+>', text)
+    kon_ru_fr = {verse: re.findall(r'(.+)>', verse)[0] for verse in verses}
+    return kon_ru_fr
+
+
+def parse_verses(kon_ru_fr):
+    nlp = spacy.load("fr_core_news_sm")
+    return[nlp(verse) for verse in kon_ru_fr.values()]
+
+
+def filter_verses(kon_ru_fr, filter):
+    filtered_verses = []
+    for k, v in kon_ru_fr.items():
+        if v in filter:
+            filtered_verses.append(k)
+    return filtered_verses
 
 
 def is_concrete(lemma, pos, lang):
@@ -21,37 +39,26 @@ def is_concrete(lemma, pos, lang):
             return False
 
 
-def get_cop_det(text):
+def get_cop_det_nref(text):
 
-    verses = re.findall(r'\d+[^\d]+>', text)
-    kon_ru_fr = {verse: re.findall(r'(.+)>', verse)[0] for verse in verses}
-    
-    nlp = spacy.load("fr_core_news_sm")
-    parsed_verses = [nlp(verse) for verse in kon_ru_fr.values()]
+    kon_ru_fr = extract_verses(text)
+    parsed_verses = parse_verses(kon_ru_fr)
 
     cop_det_verses = []
     for verse in parsed_verses:
         for idx, token in enumerate(verse[:-1]):
-            if token.dep_ == 'cop' and verse[idx+1].text.lower() in ['un', 'une']:
+            if token.pos_ == 'AUX' and verse[idx + 1].lemma_ == 'un':
                 if verse.text not in cop_det_verses:
                     cop_det_verses.append(verse.text)
 
-    tr_verses = []
-    for k, v in kon_ru_fr.items():
-        if v in cop_det_verses:
-            tr_verses.append(k)
-
-    return tr_verses
+    return filter_verses(kon_ru_fr, cop_det_verses)
 
 
 def get_NdeN_nref(text):
 
-    verses = re.findall(r'\d+[^\d]+>', text)
-    kon_ru_fr = {verse: re.findall(r'(.+)>', verse)[0] for verse in verses}
+    kon_ru_fr = extract_verses(text)
     kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r"([^\w]de[^\w])|[^\w]d'", v)}
-
-    nlp = spacy.load("fr_core_news_sm")
-    parsed_verses = [nlp(verse) for verse in kon_ru_fr.values()]
+    parsed_verses = parse_verses(kon_ru_fr)
 
     nom_de_nom = []
     for verse in parsed_verses:
@@ -71,17 +78,21 @@ def get_NdeN_nref(text):
                                 and verse not in nom_de_nom):
                             nom_de_nom.append(verse.text)
 
-    nom_de_nom_verses = []
-    for k, v in kon_ru_fr.items():
-        if v in nom_de_nom:
-            nom_de_nom_verses.append(k)
-
-    return nom_de_nom_verses
+    return filter_verses(kon_ru_fr, nom_de_nom)
 
 
-with open('Parallel corpus/Konabere-Russian-French/United books/New Testament.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
+text = "Car la prédication de la croix est une folie pour ceux qui périssent; mais pour nous qui sommes sauvés, elle est une puissance de Dieu."
+nlp = spacy.load("fr_core_news_sm")
+doc = nlp(text)
+constructions = []
+for idx, token in enumerate(doc[:-1]):
+    if token.pos_ == 'AUX' and doc[idx + 1].lemma_ == 'un':
+        if doc.text not in constructions:
+            constructions.append(' '.join([token.text, doc[idx + 1].text]))
 
-with open('Contexts/Noun + de + noun (non-referential).txt', 'w', encoding='utf-8') as f:
-    for verse in get_NdeN_nref(text):
-        f.write(verse + '\n\n')
+print(constructions)
+
+
+
+
+
