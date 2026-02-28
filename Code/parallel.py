@@ -1,12 +1,17 @@
 import re
 
 
-def find_verses(text):
+def find_verses(text: str) -> list[str]:
+    """
+    Extracts verses from original texts indepedently from source language
+    """
     return re.findall(r'\d+ (?:[^\d\n]+\n)+', text)
 
 
-def parallel_kon_rus(text_rus, text_kon):
-
+def parallel_kon_rus(text_rus: str, text_kon: str) -> str:
+    """
+    Creates a parallel Konabere-Russian corpus
+    """
     lines_rus = find_verses(text_rus)
     lines_kon = find_verses(text_kon)
 
@@ -24,8 +29,10 @@ def parallel_kon_rus(text_rus, text_kon):
         return f'{len(lines_rus)} != {len(lines_kon)}'
     
 
-def highlight_rus(par_text):
-
+def highlight_rus(par_text: str) -> str:
+    """
+    Puts < and > around Russian translations
+    """
     lines_rus_kon = find_verses(par_text)
 
     for line in lines_rus_kon:
@@ -38,8 +45,10 @@ def highlight_rus(par_text):
     return par_text
 
 
-def add_fr(par_text, fr_text):
-
+def add_fr(par_text, fr_text) -> str:
+    """
+    Adds french translation to the bilingual corpus
+    """
     lines_ru_kon = find_verses(par_text)
     lines_fr = find_verses(fr_text)
 

@@ -4,22 +4,28 @@ from collections import Counter
 from nltk.corpus import wordnet
 
 
-def extract_verses(text: str):
-
+def extract_verses(text: str) -> dict[str, str]:
+    """
+    Divides a parallel corpus into verses and then subdivides them into translations
+    """
     verses = re.findall(r'\d+[^\d]+>', text)
     kon_ru_fr = {verse: re.findall(r'(.+)>', verse)[0] for verse in verses}
 
     return kon_ru_fr
 
 
-def parse_verses(kon_ru_fr: dict):
-    
+def parse_verses(kon_ru_fr: dict[str, str]) -> list[str]:
+    """
+    Does morphosyntactic annotation of french verses
+    """
     nlp = spacy.load("fr_core_news_sm")
     return[nlp(verse) for verse in kon_ru_fr.values()]
 
 
-def filter_verses(kon_ru_fr: dict, target: list):
-
+def filter_verses(kon_ru_fr: dict[str, str], target: dict[str, list[str]]) -> list[str]:
+    """
+    Filters multilingual verses based on the targed
+    """
     filtered = []
     for k, v in kon_ru_fr.items():
         if v in target:
@@ -31,8 +37,10 @@ def filter_verses(kon_ru_fr: dict, target: list):
     return filtered
 
 
-def is_concrete(lemma: str):
-
+def is_concrete(lemma: str) -> bool:
+    """
+    Checks if french lemma is abstract or concrete
+    """
     hypernyms = []
     synsets = wordnet.synsets(lemma, pos='n', lang='fra')
 
@@ -53,11 +61,10 @@ def is_concrete(lemma: str):
             return False
         
 
-def build_NdeN(w1: str, 
-               w2: str, 
-               w3: str, 
-               w4: str):
-
+def build_NdeN(w1: str, w2: str, w3: str, w4: str) -> str: 
+    """
+    Builds an original construction from separate words
+    """
     if not w4:
         constr = f'{w1} {w2} {w3}'
         if "d'" in constr:
@@ -69,8 +76,14 @@ def build_NdeN(w1: str,
     return constr
 
 
-def is_NdeN(w1, w2, w3, w4):
-
+def is_NdeN(w1: spacy.tokens.token.Token, 
+            w2: spacy.tokens.token.Token, 
+            w3: spacy.tokens.token.Token, 
+            w4: spacy.tokens.token.Token) -> tuple[bool, str]:
+    """
+    Checks if the token sequence is "noun de (un) noun" construction 
+    and if it does not include abstract lexic
+    """
     if (w1.pos_ == 'NOUN'  
         and w2.text in ['de', "d'"] 
         and w3.pos_ == 'NOUN'):
@@ -91,8 +104,10 @@ def is_NdeN(w1, w2, w3, w4):
     return False, None
 
 
-def get_NdeN(text: str):
-
+def get_NdeN(text: str) -> list[str]:
+    """
+    Extracts from the text verses with "noun de (un) noun" constructions
+    """
     kon_ru_fr = extract_verses(text)
     kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r"([^\w]de[^\w])|[^\w]d'", v)}
     parsed_verses = parse_verses(kon_ru_fr)

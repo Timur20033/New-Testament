@@ -2,8 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def get_book_links():
-
+def get_book_links() -> list[str]:
+    """
+    Collects links to the 27 books of the French New Testament
+    """
     link = 'https://www.wordproject.org/bibles/fr/index.htm#1'
     domen = 'https://www.wordproject.org/bibles/fr/'
 
@@ -15,8 +17,10 @@ def get_book_links():
     return book_links
 
 
-def get_chapter_links(book_link):
-
+def get_chapter_links(book_link: str) -> list[str]:
+    """
+    Collects links to the chapters of a particular book
+    """
     domen = book_link[:-5]
 
     page = requests.get(book_link, 'lxml').text
@@ -29,8 +33,10 @@ def get_chapter_links(book_link):
     return chapter_links
 
 
-def get_verses(chapter_link):
-
+def get_verses(chapter_link: str) -> str:
+    """
+    Collects text from the chapter
+    """
     page = requests.get(chapter_link, 'lxml')
     page = BeautifulSoup(page.text)
 
