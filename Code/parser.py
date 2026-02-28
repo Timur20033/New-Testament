@@ -69,7 +69,7 @@ def get_NdeN_nref(text):
                 and token.text in ['de', "d'"] 
                 and w1.pos_ == 'NOUN' 
                 and w2.pos_ == 'NOUN'
-                and token.head.head.i == idx - 1):
+                and w1.i == idx - 1):
                     if is_concrete(w1.lemma_, 'n', 'fra') and is_concrete(w2.lemma_, 'n', 'fra'):
                         if (w2.i == idx + 1 
                             and verse not in nom_de_nom):
@@ -79,20 +79,3 @@ def get_NdeN_nref(text):
                             nom_de_nom.append(verse.text)
 
     return filter_verses(kon_ru_fr, nom_de_nom)
-
-
-text = "Car la prédication de la croix est une folie pour ceux qui périssent; mais pour nous qui sommes sauvés, elle est une puissance de Dieu."
-nlp = spacy.load("fr_core_news_sm")
-doc = nlp(text)
-constructions = []
-for idx, token in enumerate(doc[:-1]):
-    if token.pos_ == 'AUX' and doc[idx + 1].lemma_ == 'un':
-        if doc.text not in constructions:
-            constructions.append(' '.join([token.text, doc[idx + 1].text]))
-
-print(constructions)
-
-
-
-
-

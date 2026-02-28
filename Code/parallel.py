@@ -1,10 +1,14 @@
 import re
 
 
-def parallel(text_rus, text_kon):
+def find_verses(text):
+    return re.findall(r'\d+ (?:[^\d\n]+\n)+', text)
 
-    lines_rus = re.findall(r'\d+ (?:[^\d\n]+\n)+', text_rus)
-    lines_kon = re.findall(r'\d+ (?:[^\d\n]+\n)+', text_kon)
+
+def parallel_kon_rus(text_rus, text_kon):
+
+    lines_rus = find_verses(text_rus)
+    lines_kon = find_verses(text_kon)
 
     if len(lines_kon) == len(lines_rus):
         for idx, line_kon in enumerate(lines_kon):
@@ -22,7 +26,7 @@ def parallel(text_rus, text_kon):
 
 def highlight_rus(par_text):
 
-    lines_rus_kon = re.findall(r'\d+ (?:[^\d\n]+\n)+', par_text)
+    lines_rus_kon = find_verses(par_text)
 
     for line in lines_rus_kon:
         sublines = line.strip().split('\n')
@@ -36,8 +40,8 @@ def highlight_rus(par_text):
 
 def add_fr(par_text, fr_text):
 
-    lines_ru_kon = re.findall(r'\d+ (?:[^\d\n]+\n)+', par_text)
-    lines_fr = re.findall(r'\d+ (?:[^\d\n]+\n)+', fr_text)
+    lines_ru_kon = find_verses(par_text)
+    lines_fr = find_verses(fr_text)
 
     if len(lines_ru_kon) == len(lines_fr):
         for idx, line_ru_kon in enumerate(lines_ru_kon):
