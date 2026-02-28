@@ -13,6 +13,7 @@ def extract_verses(text: str):
 
 
 def parse_verses(kon_ru_fr: dict):
+    
     nlp = spacy.load("fr_core_news_sm")
     return[nlp(verse) for verse in kon_ru_fr.values()]
 
@@ -52,10 +53,10 @@ def is_concrete(lemma: str):
             return False
         
 
-def build_NdeN_nref(w1: str, 
-                    w2: str, 
-                    w3: str, 
-                    w4: str):
+def build_NdeN(w1: str, 
+               w2: str, 
+               w3: str, 
+               w4: str):
 
     if not w4:
         constr = f'{w1} {w2} {w3}'
@@ -68,13 +69,13 @@ def build_NdeN_nref(w1: str,
     return constr
 
 
-def is_NdeN_nref(w1, w2, w3, w4):
+def is_NdeN(w1, w2, w3, w4):
 
     if (w1.pos_ == 'NOUN'  
         and w2.text in ['de', "d'"] 
         and w3.pos_ == 'NOUN'):
         if is_concrete(w1.lemma_) and is_concrete(w3.lemma_):
-            constr = build_NdeN_nref(w1.text, w2.text, w3.text, None)
+            constr = build_NdeN(w1.text, w2.text, w3.text, None)
 
             return True, constr
 
@@ -83,14 +84,14 @@ def is_NdeN_nref(w1, w2, w3, w4):
           and w3.lemma_ == 'un' 
           and w4.pos_ == 'NOUN'):
         if is_concrete(w1.lemma_) and is_concrete(w4.lemma_):
-            constr = build_NdeN_nref(w1.text, w2.text, w3.text, w4.text)
+            constr = build_NdeN(w1.text, w2.text, w3.text, w4.text)
     
             return True, constr 
     
     return False, None
 
 
-def get_NdeN_nref(text: str):
+def get_NdeN(text: str):
 
     kon_ru_fr = extract_verses(text)
     kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r"([^\w]de[^\w])|[^\w]d'", v)}
@@ -99,10 +100,10 @@ def get_NdeN_nref(text: str):
     NdeN_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
         for token in verse[:-3]:
-            constr = is_NdeN_nref(token, 
-                                  verse[token.i + 1],
-                                  verse[token.i + 2],
-                                  verse[token.i + 3])
+            constr = is_NdeN(token,
+                             verse[token.i + 1],
+                             verse[token.i + 2],
+                             verse[token.i + 3])
             if constr[0]:
                 NdeN_verses[verse.text].append(constr[1])
     
@@ -124,45 +125,3 @@ def get_cop_det_nref(text: str):
                     cop_det_verses.append(verse.text)
 
     return filter_verses(kon_ru_fr, cop_det_verses)
-
-
-with open('Parallel corpus/Konabere-Russian-French/United books/New Testament.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-
-with open('Contexts/NdeN (nref).txt', 'w', encoding='utf-8') as f:
-    verses = get_NdeN_nref(text)
-    print(len(verses))
-    for verse in verses:
-        f.write(verse + '\n\n')
-
-# kon_ru_fr = extract_verses(text)
-# kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r"([^\w]de[^\w])|[^\w]d'", v)}
-# parsed_verses = parse_verses(kon_ru_fr)
-
-# NdeN_verses = {verse.text: [] for verse in parsed_verses}
-# for verse in parsed_verses:
-#     for token in verse[:-3]:
-#         constr = is_NdeN_nref(token, 
-#                               verse[token.i + 1],
-#                               verse[token.i + 2],
-#                               verse[token.i + 3])
-#         if constr[0]:
-#             NdeN_verses[verse.text].append(constr[1])
-
-# NdeN_verses = {k: v for k, v in NdeN_verses.items() if v}
-
-# for k, v in NdeN_verses.items():
-#     print(k, v, '\n')
-
-# filtered = []
-# for k, v in kon_ru_fr.items():
-#     if v in NdeN_verses:
-#         highl_verse = k
-#         for constr in NdeN_verses[v]:
-#             highl_verse = highl_verse.replace(constr, constr.upper())
-#         filtered.append(highl_verse)
-
-# for verse in filtered:
-#     print(verse, '\n\n')
-            
-    
