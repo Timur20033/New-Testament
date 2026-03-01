@@ -63,7 +63,7 @@ def is_concrete(lemma: str) -> bool:
 
 def build_NdeN(w1: str, w2: str, w3: str, w4: str) -> str: 
     """
-    Builds an original "noun de (un) noun" construction from separate words
+    Builds an original "N de (un) N" construction from separate words
     """
     if not w4:
         constr = f'{w1} {w2} {w3}'
@@ -81,7 +81,7 @@ def is_NdeN(w1: spacy.tokens.token.Token,
             w3: spacy.tokens.token.Token, 
             w4: spacy.tokens.token.Token) -> tuple[bool, str]:
     """
-    Checks if the token sequence is "noun de (un) noun" construction 
+    Checks if the token sequence is "N de (un) N" construction 
     and if it does not include abstract lexic
     """
     if (w1.pos_ == 'NOUN'  
@@ -106,7 +106,7 @@ def is_NdeN(w1: spacy.tokens.token.Token,
 
 def get_NdeN(text: str) -> list[str]:
     """
-    Extracts from the text verses with "noun de (un) noun" constructions
+    Extracts from the text verses with "N de (un) N" constructions
     """
     kon_ru_fr = extract_verses(text)
     kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r"([^\w]de[^\w])|[^\w]d'", v)}
@@ -127,9 +127,9 @@ def get_NdeN(text: str) -> list[str]:
     return filter_verses(kon_ru_fr, NdeN_verses)
 
 
-def build_cop_un(w1: str, w2: str, w3: str, wrds: str) -> str:
+def build_cop_un_N(w1: str, w2: str, w3: str, wrds: str) -> str:
     """
-    Builds an original "copula + un" construction from separate words
+    Builds an original "COP un (ADJ) N" construction from separate words
     """
     if not wrds:
         constr = f'{w1} {w2} {w3}'
@@ -143,45 +143,45 @@ def build_cop_un(w1: str, w2: str, w3: str, wrds: str) -> str:
     return constr
 
 
-def is_cop_un(verse, 
+def is_cop_un_N(verse: spacy.tokens.doc.Doc, 
               w1: spacy.tokens.token.Token, 
               w2: spacy.tokens.token.Token, 
-              w3: spacy.tokens.token.Token):
-
+              w3: spacy.tokens.token.Token) -> tuple[bool, str]:
+    """
+    Checks if the token sequence is "COP un (ADJ) N" construction 
+    and if it does not include abstract lexic
+    """
     if w1.pos_ == 'AUX' and w2.lemma_ == 'un' and w3.pos_ == 'NOUN':
 
         if is_concrete(w3.lemma_):
 
             if w2.i == w3.i - 1:
-                constr = build_cop_un(w1.text, w2.text, w3.text, None)
+                constr = build_cop_un_N(w1.text, w2.text, w3.text, None)
 
             else:
                 wrds = ' '.join([verse[idx].text for idx in range(w2.i + 1, w3.i)])
-                constr = build_cop_un(w1.text, w2.text, w3.text, wrds)
+                constr = build_cop_un_N(w1.text, w2.text, w3.text, wrds)
 
             return True, constr
         
     return False, None
 
 
-def get_cop_un(text):
-
+def get_cop_un_N(text: str) -> str:
+    """
+    Extracts from the text verses with "COP un (ADJ) N" constructions
+    """
     kon_ru_fr = extract_verses(text)
     kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r" une? ", v)}
     parsed_verses = parse_verses(kon_ru_fr)
 
-    cop_un_verses = {verse.text: [] for verse in parsed_verses}
+    cop_un_N_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
         for token in verse[:-1]:
-            constr = is_cop_un(verse, token, verse[token.i + 1], token.head)
+            constr = is_cop_un_N(verse, token, verse[token.i + 1], token.head)
             if constr[0]:
-                cop_un_verses[verse.text].append(constr[1])
+                cop_un_N_verses[verse.text].append(constr[1])
     
-    cop_un_verses = {k: v for k, v in cop_un_verses.items() if v}
+    cop_un_N_verses = {k: v for k, v in cop_un_N_verses.items() if v}
 
-    return filter_verses(kon_ru_fr, cop_un_verses)
-
-
-nlp = spacy.load("fr_core_news_sm")
-doc = nlp('wtf')
-print(type(doc))
+    return filter_verses(kon_ru_fr, cop_un_N_verses)
