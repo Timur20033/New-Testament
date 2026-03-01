@@ -63,7 +63,7 @@ def is_concrete(lemma: str) -> bool:
 
 def build_NdeN(w1: str, w2: str, w3: str, w4: str) -> str: 
     """
-    Builds an original construction from separate words
+    Builds an original "noun de (un) noun" construction from separate words
     """
     if not w4:
         constr = f'{w1} {w2} {w3}'
@@ -127,16 +127,61 @@ def get_NdeN(text: str) -> list[str]:
     return filter_verses(kon_ru_fr, NdeN_verses)
 
 
-def get_cop_det_nref(text: str):
+def build_cop_un(w1: str, w2: str, w3: str, wrds: str) -> str:
+    """
+    Builds an original "copula + un" construction from separate words
+    """
+    if not wrds:
+        constr = f'{w1} {w2} {w3}'
+
+    else:
+        constr = f'{w1} {w2} {wrds} {w3}'
+    
+    if "' " in constr:
+        constr = constr.replace("' ", "'")
+
+    return constr
+
+
+def is_cop_un(verse, 
+              w1: spacy.tokens.token.Token, 
+              w2: spacy.tokens.token.Token, 
+              w3: spacy.tokens.token.Token):
+
+    if w1.pos_ == 'AUX' and w2.lemma_ == 'un' and w3.pos_ == 'NOUN':
+
+        if is_concrete(w3.lemma_):
+
+            if w2.i == w3.i - 1:
+                constr = build_cop_un(w1.text, w2.text, w3.text, None)
+
+            else:
+                wrds = ' '.join([verse[idx].text for idx in range(w2.i + 1, w3.i)])
+                constr = build_cop_un(w1.text, w2.text, w3.text, wrds)
+
+            return True, constr
+        
+    return False, None
+
+
+def get_cop_un(text):
 
     kon_ru_fr = extract_verses(text)
+    kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r" une? ", v)}
     parsed_verses = parse_verses(kon_ru_fr)
 
-    cop_det_verses = []
+    cop_un_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
-        for idx, token in enumerate(verse[:-1]):
-            if token.pos_ == 'AUX' and verse[idx + 1].lemma_ == 'un':
-                if verse.text not in cop_det_verses:
-                    cop_det_verses.append(verse.text)
+        for token in verse[:-1]:
+            constr = is_cop_un(verse, token, verse[token.i + 1], token.head)
+            if constr[0]:
+                cop_un_verses[verse.text].append(constr[1])
+    
+    cop_un_verses = {k: v for k, v in cop_un_verses.items() if v}
 
-    return filter_verses(kon_ru_fr, cop_det_verses)
+    return filter_verses(kon_ru_fr, cop_un_verses)
+
+
+nlp = spacy.load("fr_core_news_sm")
+doc = nlp('wtf')
+print(type(doc))
