@@ -109,7 +109,6 @@ def get_NdeN(text: str) -> list[str]:
     Extracts from the text verses with "N de (un) N" constructions
     """
     kon_ru_fr = extract_verses(text)
-    kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r"([^\w]de[^\w])|[^\w]d'", v)}
     parsed_verses = parse_verses(kon_ru_fr)
 
     NdeN_verses = {verse.text: [] for verse in parsed_verses}
@@ -127,22 +126,6 @@ def get_NdeN(text: str) -> list[str]:
     return filter_verses(kon_ru_fr, NdeN_verses)
 
 
-def build_cop_un_N(w1: str, w2: str, w3: str, wrds: str) -> str:
-    """
-    Builds an original "COP un (ADJ) N" construction from separate words
-    """
-    if not wrds:
-        constr = f'{w1} {w2} {w3}'
-
-    else:
-        constr = f'{w1} {w2} {wrds} {w3}'
-    
-    if "' " in constr:
-        constr = constr.replace("' ", "'")
-
-    return constr
-
-
 def is_cop_un_N(verse: spacy.tokens.doc.Doc, 
               w1: spacy.tokens.token.Token, 
               w2: spacy.tokens.token.Token, 
@@ -156,11 +139,11 @@ def is_cop_un_N(verse: spacy.tokens.doc.Doc,
         if is_concrete(w3.lemma_):
 
             if w2.i == w3.i - 1:
-                constr = build_cop_un_N(w1.text, w2.text, w3.text, None)
+                constr = f'{w1} {w2} {w3}'
 
             else:
                 wrds = ' '.join([verse[idx].text for idx in range(w2.i + 1, w3.i)])
-                constr = build_cop_un_N(w1.text, w2.text, w3.text, wrds)
+                constr = f'{w1} {w2} {wrds} {w3}'
 
             return True, constr
         
@@ -172,7 +155,6 @@ def get_cop_un_N(text: str) -> str:
     Extracts from the text verses with "COP un (ADJ) N" constructions
     """
     kon_ru_fr = extract_verses(text)
-    kon_ru_fr = {k: v for k, v in kon_ru_fr.items() if re.findall(r" une? ", v)}
     parsed_verses = parse_verses(kon_ru_fr)
 
     cop_un_N_verses = {verse.text: [] for verse in parsed_verses}
@@ -185,3 +167,63 @@ def get_cop_un_N(text: str) -> str:
     cop_un_N_verses = {k: v for k, v in cop_un_N_verses.items() if v}
 
     return filter_verses(kon_ru_fr, cop_un_N_verses)
+
+
+def is_VunN(verse: spacy.tokens.doc.Doc, 
+            w1: spacy.tokens.token.Token,
+            w2: spacy.tokens.token.Token,
+            w3: spacy.tokens.token.Token) -> tuple[bool, str]:
+    """
+    Checks if token sequence is "V un N" construction
+    """
+    if (w1.pos_ == 'VERB' 
+        and w1.pos_ != 'cop'
+        and w2.text in ['un', 'une', 'des']
+        and w3.pos_ == 'NOUN'):
+
+        if is_concrete(w3.lemma_):
+        
+            if w3.i == w2.i + 1:
+                constr = f'{w1.text} {w2.text} {w3.text}'
+            
+            else:
+                wrds = ' '.join([verse[idx].text for idx in range(w2.i + 1, w3.i)])
+                constr = f'{w1} {w2} {wrds} {w3}'
+
+            return True, constr
+    
+    return False, None
+
+
+def get_VunN(text: str) -> str:
+    
+    kon_ru_fr = extract_verses(text)
+    parsed_verses = parse_verses(kon_ru_fr)
+
+    VunN_verses = {verse.text: [] for verse in parsed_verses}
+    for verse in parsed_verses:
+        for token in verse[:-1]:
+            constr = is_VunN(verse, token, verse[token.i + 1], verse[token.i + 1].head)
+            if constr[0]:
+                VunN_verses[verse.text].append(constr[1])
+    
+    VunN_verses = {k: v for k, v in VunN_verses.items() if v}
+
+    return filter_verses(kon_ru_fr, VunN_verses)
+
+
+# nlp = spacy.load("fr_core_news_sm")
+# doc = nlp("il mange un pomme")
+# for token in doc[:-1]:
+#     print(token.lemma_, token.pos_, token.dep_, token.head, sep='\t')
+#     constr = is_VunN(doc, token, doc[token.i + 1], doc[token.i + 1].head)
+#     if constr[0]:
+#         print(constr)
+
+with open('Parallel corpus/Konabere-Russian-French/United books/New Testament.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+
+with open('Contexts/N_deN.txt', 'w', encoding='utf-8') as f:
+    for verse in get_NdeN(text):
+        f.write(verse + '\n\n')
+
