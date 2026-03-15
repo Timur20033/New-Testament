@@ -4,6 +4,10 @@ from collections import Counter
 from nltk.corpus import wordnet
 
 
+with open('Code/materials.txt', 'r', encoding='utf-8') as f:
+    materials = f.read().strip().split('\n')
+
+
 def extract_verses(text: str) -> dict[str, str]:
     """
     Divides a parallel corpus into verses and then subdivides them into translations
@@ -126,7 +130,7 @@ def get_NdeN(text: str) -> list[str]:
     return filter_verses(kon_ru_fr, NdeN_verses)
 
 
-def is_cop_un_N(verse: spacy.tokens.doc.Doc, 
+def is_COPunN(verse: spacy.tokens.doc.Doc, 
               w1: spacy.tokens.token.Token, 
               w2: spacy.tokens.token.Token, 
               w3: spacy.tokens.token.Token) -> tuple[bool, str]:
@@ -150,7 +154,7 @@ def is_cop_un_N(verse: spacy.tokens.doc.Doc,
     return False, None
 
 
-def get_cop_un_N(text: str) -> str:
+def get_COPunN(text: str) -> list[str]:
     """
     Extracts from the text verses with "COP un (ADJ) N" constructions
     """
@@ -160,7 +164,7 @@ def get_cop_un_N(text: str) -> str:
     cop_un_N_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
         for token in verse[:-1]:
-            constr = is_cop_un_N(verse, token, verse[token.i + 1], token.head)
+            constr = is_COPunN(verse, token, verse[token.i + 1], token.head)
             if constr[0]:
                 cop_un_N_verses[verse.text].append(constr[1])
     
@@ -195,7 +199,7 @@ def is_VunN(verse: spacy.tokens.doc.Doc,
     return False, None
 
 
-def get_VunN(text: str) -> str:
+def get_VunN(text: str) -> list[str]:
     
     kon_ru_fr = extract_verses(text)
     parsed_verses = parse_verses(kon_ru_fr)
@@ -212,18 +216,67 @@ def get_VunN(text: str) -> str:
     return filter_verses(kon_ru_fr, VunN_verses)
 
 
-# nlp = spacy.load("fr_core_news_sm")
-# doc = nlp("il mange un pomme")
-# for token in doc[:-1]:
-#     print(token.lemma_, token.pos_, token.dep_, token.head, sep='\t')
-#     constr = is_VunN(doc, token, doc[token.i + 1], doc[token.i + 1].head)
-#     if constr[0]:
-#         print(constr)
+def is_mat(w1: spacy.tokens.token.Token,
+           w2: spacy.tokens.token.Token,
+           w3: spacy.tokens.token.Token,
+           materials=materials) -> tuple[bool, str]:
+    
+    if (w1.pos_ == 'NOUN' 
+        and w2.lemma_ == 'de'
+        and w3.lemma_ in materials):
+
+        constr = f'{w1} {w2} {w3}'
+        if "d'" in constr:
+            constr = constr.replace("d' ", "d'")
+
+        return True, constr
+    
+    return False, None
+
+
+def get_mat(parsed_verses: list[spacy.tokens.doc.Doc]):
+
+    mat_verses = {verse.text: [] for verse in parsed_verses}
+
+    for verse in parsed_verses:
+        for token in verse[:-2]:
+            constr = is_mat(token, verse[token.i + 1], verse[token.i + 2])
+            if constr[0]:
+                mat_verses[verse.text].append(constr[1])
+
+    return {k: v for k, v in mat_verses.items() if v}
+
+
+def get_constr(text: str, constr_type) -> list[str]:
+
+    kon_ru_fr = extract_verses(text)
+    parsed_verses = parse_verses(kon_ru_fr)
+    target_verses = constr_type(parsed_verses)
+
+    return filter_verses(kon_ru_fr, target_verses)
+
 
 with open('Parallel corpus/Konabere-Russian-French/United books/New Testament.txt', 'r', encoding='utf-8') as f:
     text = f.read()
 
-with open('Contexts/N_deN.txt', 'w', encoding='utf-8') as f:
-    for verse in get_NdeN(text):
+with open('Contexts/N_de_mat.txt', 'w', encoding='utf-8') as f:
+    verses = get_constr(text, get_mat)
+    print(len(verses))
+    for verse in verses:
         f.write(verse + '\n\n')
+
+    
+
+
+
+                
+            
+        
+        
+        
+
+
+
+
+
 
