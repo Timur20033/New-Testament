@@ -108,26 +108,18 @@ def is_NdeN(w1: spacy.tokens.token.Token,
     return False, None
 
 
-def get_NdeN(text: str) -> list[str]:
+def get_NdeN(parsed_verses: list[spacy.tokens.doc.Doc])-> dict[str, list[str]]:
     """
-    Extracts from the text verses with "N de (un) N" constructions
+    Extracts NdeN constructons from the list of preprocessed verses
     """
-    kon_ru_fr = extract_verses(text)
-    parsed_verses = parse_verses(kon_ru_fr)
-
     NdeN_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
         for token in verse[:-3]:
-            constr = is_NdeN(token,
-                             verse[token.i + 1],
-                             verse[token.i + 2],
-                             verse[token.i + 3])
+            constr = is_NdeN(token, verse[token.i + 1], verse[token.i + 2], verse[token.i + 3])
             if constr[0]:
                 NdeN_verses[verse.text].append(constr[1])
     
-    NdeN_verses = {k: v for k, v in NdeN_verses.items() if v}
-
-    return filter_verses(kon_ru_fr, NdeN_verses)
+    return {k: v for k, v in NdeN_verses.items() if v}
 
 
 def is_COPunN(verse: spacy.tokens.doc.Doc, 
@@ -154,13 +146,10 @@ def is_COPunN(verse: spacy.tokens.doc.Doc,
     return False, None
 
 
-def get_COPunN(text: str) -> list[str]:
+def get_COPunN(parsed_verses: list[spacy.tokens.doc.Doc]) -> dict[str, list[str]]:
     """
-    Extracts from the text verses with "COP un (ADJ) N" constructions
+    Extracts COPunN constructons from the list of preprocessed verses
     """
-    kon_ru_fr = extract_verses(text)
-    parsed_verses = parse_verses(kon_ru_fr)
-
     cop_un_N_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
         for token in verse[:-1]:
@@ -168,9 +157,7 @@ def get_COPunN(text: str) -> list[str]:
             if constr[0]:
                 cop_un_N_verses[verse.text].append(constr[1])
     
-    cop_un_N_verses = {k: v for k, v in cop_un_N_verses.items() if v}
-
-    return filter_verses(kon_ru_fr, cop_un_N_verses)
+    return {k: v for k, v in cop_un_N_verses.items() if v}
 
 
 def is_VunN(verse: spacy.tokens.doc.Doc, 
@@ -199,11 +186,10 @@ def is_VunN(verse: spacy.tokens.doc.Doc,
     return False, None
 
 
-def get_VunN(text: str) -> list[str]:
-    
-    kon_ru_fr = extract_verses(text)
-    parsed_verses = parse_verses(kon_ru_fr)
-
+def get_VunN(parsed_verses: list[spacy.tokens.doc.Doc]) -> dict[str, list[str]]:
+    """
+    Extracts VunN constructons from the list of preprocessed verses
+    """
     VunN_verses = {verse.text: [] for verse in parsed_verses}
     for verse in parsed_verses:
         for token in verse[:-1]:
@@ -211,9 +197,7 @@ def get_VunN(text: str) -> list[str]:
             if constr[0]:
                 VunN_verses[verse.text].append(constr[1])
     
-    VunN_verses = {k: v for k, v in VunN_verses.items() if v}
-
-    return filter_verses(kon_ru_fr, VunN_verses)
+    return {k: v for k, v in VunN_verses.items() if v}
 
 
 def is_mat(w1: spacy.tokens.token.Token,
@@ -234,8 +218,10 @@ def is_mat(w1: spacy.tokens.token.Token,
     return False, None
 
 
-def get_mat(parsed_verses: list[spacy.tokens.doc.Doc]):
-
+def get_mat(parsed_verses: list[spacy.tokens.doc.Doc]) -> dict[str, list[str]]:
+    """
+    Extracts NdeMat constructons from the list of preprocessed verses
+    """
     mat_verses = {verse.text: [] for verse in parsed_verses}
 
     for verse in parsed_verses:
@@ -254,29 +240,3 @@ def get_constr(text: str, constr_type) -> list[str]:
     target_verses = constr_type(parsed_verses)
 
     return filter_verses(kon_ru_fr, target_verses)
-
-
-with open('Parallel corpus/Konabere-Russian-French/United books/New Testament.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-
-with open('Contexts/N_de_mat.txt', 'w', encoding='utf-8') as f:
-    verses = get_constr(text, get_mat)
-    print(len(verses))
-    for verse in verses:
-        f.write(verse + '\n\n')
-
-    
-
-
-
-                
-            
-        
-        
-        
-
-
-
-
-
-
