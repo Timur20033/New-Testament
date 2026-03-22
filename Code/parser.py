@@ -6,7 +6,7 @@ from nltk.corpus import wordnet
 
 class VerseManager:
     """
-    Tool for searching necessary constructions: NdeN, COPunN, VunN, NdeMat
+    Tool for searching necessary constructions: NdeN, COPunN, VunN, NdeMat, BodyPartdeN
     """
     def __init__(self, text: str) -> None:
 
@@ -50,6 +50,9 @@ class VerseManager:
 
         if constr_type == 'NdeMat':
             self.target_verses = extractor.get_NdeMat()
+
+        if constr_type == 'BodyPartdeN':
+            self.target_verses = extractor.get_BodyPartdeN()
         
     
     def filter_verses(self) -> None:
@@ -64,17 +67,22 @@ class VerseManager:
                 self.filtered_verses.append(highl_verse)
 
     
-    def search(self, constr_type: str) -> list[str]:
+    def search(self, constr_type: str, file_name: str) -> None:
         """
         Searches for necessary constructions in the corpus
-        by completing all the tasks above at once 
+        by completing all the tasks above at once;
+        then writes results in the file
         """
         self.extract_verses()
         self.parse_verses()
         self.get_constructions(constr_type)
         self.filter_verses()
 
-        return self.filtered_verses
+        with open(f'Contexts/{file_name}.txt', 'w', encoding='utf-8') as f:
+            f.write(f'NUMBER OF VERSES: {len(self.filtered_verses)}\n\n')
+            
+            for verse in self.filtered_verses:
+                f.write(verse + '\n\n')
 
 
 class Checker:
@@ -109,7 +117,67 @@ class Checker:
             
             else:
                 return False
+            
+
+    def is_body_part(self, lemma: str) -> bool:
+        """
+        Checks if a token is a body part
+        """
+        for i in wordnet.synsets(lemma, pos='n', lang='fra'):
+            for path in i.hypernym_paths():
+                if len(path) >= 5:
+                    if 'body_part' == path[4].name().split('.')[0]:
+                        return True
+                
+        return False
     
+
+    def is_living_thing(self, lemma: str) -> bool:
+        """
+        Checks if a token designates a living creature
+        """
+        for synset in wordnet.synsets(lemma, pos='n', lang='fra'):
+            for path in synset.hypernym_paths():
+                
+                if len(path) >= 5:
+                    if path[4].name().split('.')[0] == 'living_thing':
+
+                        return True
+                    
+        return False
+    
+
+    def is_BodyPartdeN(self,
+                       w1: spacy.tokens.token.Token, 
+                       w2: spacy.tokens.token.Token,
+                       w3: spacy.tokens.token.Token,
+                       w4: spacy.tokens.token.Token) -> tuple[bool, str]:
+        """
+        Checks if a token sequence is a BodyPartdeN construction
+        """
+        if (w1.pos_ == 'NOUN' 
+            and self.is_body_part(w1.lemma_) 
+            and w2.text not in ["du", "des"]
+            and w2.lemma_ == 'de'):
+
+            constr = ''
+
+            if w3.lemma_ == 'un' and w4.pos_ == 'NOUN':
+                if self.is_living_thing(w4.lemma_):
+                    constr = f'{w1} {w2} {w3} {w4}'
+
+            elif w3.pos_ == 'NOUN':
+                if self.is_living_thing(w3.lemma_):
+                    constr = f'{w1} {w2} {w3}'
+
+            if "' " in constr:
+                constr = constr.replace("' ", "'")
+
+            if constr:
+                return True, constr
+        
+        return False, None
+        
 
     def is_NdeN(self,
                 w1: spacy.tokens.token.Token, 
@@ -125,8 +193,8 @@ class Checker:
             and w3.pos_ == 'NOUN'):
             if self.is_concrete(w1.lemma_) and self.is_concrete(w3.lemma_):
                 constr = f'{w1} {w2} {w3}'
-                if "d'" in constr:
-                    constr = constr.replace("d' ", "d'")
+                if "' " in constr:
+                    constr = constr.replace("' ", "'")
 
                 return True, constr
 
@@ -206,8 +274,8 @@ class Checker:
             and w3.lemma_ in self.materials):
 
             constr = f'{w1} {w2} {w3}'
-            if "d'" in constr:
-                constr = constr.replace("d' ", "d'")
+            if "' " in constr:
+                constr = constr.replace("' ", "'")
 
             return True, constr
         
@@ -226,6 +294,7 @@ class Extractor:
         self.COPunN = data
         self.VunN = data
         self.NdeMat = data
+        self.BodyPartdeN = data
 
 
     def get_NdeN(self) -> dict[str,list[str]]:
@@ -294,3 +363,21 @@ class Extractor:
         self.NdeMat = {k: v for k, v in self.NdeMat.items() if v}
 
         return self.NdeMat
+    
+
+    def get_BodyPartdeN(self):
+
+        checker = Checker()
+
+        for verse in self.parsed_verses:
+            for token in verse[:-3]:
+                constr = checker.is_BodyPartdeN(token, 
+                                                verse[token.i + 1], 
+                                                verse[token.i + 2], 
+                                                verse[token.i + 3])
+                if constr[0]:
+                    self.BodyPartdeN[verse.text].append(constr[1])
+
+        self.BodyPartdeN = {k: v for k, v in self.BodyPartdeN.items() if v}
+
+        return self.BodyPartdeN

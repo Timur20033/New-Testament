@@ -1,1 +1,1 @@
-This project includes two parallel corpora based on the New Testament: Konabere-Russian and Konabere-Russian-French (original texts are included as well). There are also audio files to Konabere New Testament and different contexts containing particular grammatical constructions.
+This project includes parallel Konabere-Russian-French corpus based on the New Testament with a tool for searching necessary grammatical constructions. There are also audio files, as well as a bank with extracted constructions.
