@@ -6,7 +6,7 @@ from nltk.corpus import wordnet
 
 class VerseManager:
     """
-    Tool for searching necessary constructions: NdeN, COPunN, VunN, NdeMat, BodyPartdeN
+    Tool for searching necessary constructions: NdeN, COPunN, VunN, NdeMat, BodyPartdeN, UnSubjV
     """
     def __init__(self, text: str) -> None:
 
@@ -54,6 +54,9 @@ class VerseManager:
         if constr_type == 'BodyPartdeN':
             self.target_verses = extractor.get_BodyPartdeN()
         
+        if constr_type == 'UnSubjV':
+            self.target_verses = extractor.get_UnSubjV()
+
     
     def filter_verses(self) -> None:
         """
@@ -282,6 +285,27 @@ class Checker:
         return False, None
     
 
+    def is_UnSubjV(self,
+                  verse: spacy.tokens.doc.Doc, 
+                  w1: spacy.tokens.token.Token,
+                  w2: spacy.tokens.token.Token,
+                  w3: spacy.tokens.token.Token) -> tuple[bool, str]:
+        """
+        Checks if a token sequence is an UnSubjV construction
+        """
+        if self.is_concrete(w2.lemma_):
+
+            if w1.lemma_ == 'un' and w3.pos_ in ['VERB', 'AUX'] and w3.i > w2.i:
+                constr = ' '.join([token.text for token in verse[w1.i : w3.i + 1]])
+
+                if "' " in constr:
+                    constr = constr.replace("' ", "'")
+
+                return True, constr
+        
+        return False, None
+
+    
 class Extractor:
     """
     Highlights different types of constructions in the list of preprocessed verses
@@ -295,6 +319,7 @@ class Extractor:
         self.VunN = data
         self.NdeMat = data
         self.BodyPartdeN = data
+        self.UnSubjV = data
 
 
     def get_NdeN(self) -> dict[str,list[str]]:
@@ -366,7 +391,9 @@ class Extractor:
     
 
     def get_BodyPartdeN(self):
-
+        """
+        Highlights BodyPartdeN constructions
+        """
         checker = Checker()
 
         for verse in self.parsed_verses:
@@ -381,3 +408,20 @@ class Extractor:
         self.BodyPartdeN = {k: v for k, v in self.BodyPartdeN.items() if v}
 
         return self.BodyPartdeN
+    
+
+    def get_UnSubjV(self):
+        """
+        Highlights UnSubjV constructons
+        """
+        checker = Checker()
+
+        for verse in self.parsed_verses:
+            for token in verse:
+                constr = checker.is_UnSubjV(verse, token, token.head, token.head.head)
+                if constr[0]:
+                    self.UnSubjV[verse.text].append(constr[1])
+
+        self.UnSubjV = {k: v for k, v in self.UnSubjV.items() if v}
+
+        return self.UnSubjV
