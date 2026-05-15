@@ -6,7 +6,14 @@ from nltk.corpus import wordnet
 
 class VerseManager:
     """
-    Tool for searching necessary constructions: NdeN, COPunN, VunN, NdeMat, BodyPartdeN, UnSubjV
+    Tool for searching the folllowing types of constructions: 
+    - NdeN
+    - COPunN
+    - VunN
+    - NdeMat
+    - BodyPartdeN
+    - UnSubjV
+    - COPAdj
     """
     def __init__(self, text: str) -> None:
 
@@ -57,6 +64,8 @@ class VerseManager:
         if constr_type == 'UnSubjV':
             self.target_verses = extractor.get_UnSubjV()
 
+        if constr_type == 'COPAdj':
+            self.target_verses = extractor.get_COPAdj()
     
     def filter_verses(self) -> None:
         """
@@ -304,6 +313,19 @@ class Checker:
                 return True, constr
         
         return False, None
+    
+
+    def is_COPAdj(self,
+                  w1: spacy.tokens.token.Token,
+                  w2: spacy.tokens.token.Token):
+        """
+        Checks if a token sequence is a COPAdj construction
+        """
+        if w1.lemma_ == 'être' and w2.pos_ == 'ADJ':
+            constr = f"{w1} {w2}"
+            return True, constr
+        
+        return False, None
 
     
 class Extractor:
@@ -320,6 +342,7 @@ class Extractor:
         self.NdeMat = data
         self.BodyPartdeN = data
         self.UnSubjV = data
+        self.COPAdj = data
 
 
     def get_NdeN(self) -> dict[str,list[str]]:
@@ -390,7 +413,7 @@ class Extractor:
         return self.NdeMat
     
 
-    def get_BodyPartdeN(self):
+    def get_BodyPartdeN(self) -> dict[str,list[str]]:
         """
         Highlights BodyPartdeN constructions
         """
@@ -410,7 +433,7 @@ class Extractor:
         return self.BodyPartdeN
     
 
-    def get_UnSubjV(self):
+    def get_UnSubjV(self) -> dict[str,list[str]]:
         """
         Highlights UnSubjV constructons
         """
@@ -425,3 +448,20 @@ class Extractor:
         self.UnSubjV = {k: v for k, v in self.UnSubjV.items() if v}
 
         return self.UnSubjV
+    
+
+    def get_COPAdj(self) -> dict[str,list[str]]:
+        """
+        Highlights COPAdj constructions
+        """
+        checker = Checker()
+
+        for verse in self.parsed_verses:
+            for token in verse[:-1]:
+                constr = checker.is_COPAdj(token, verse[token.i + 1])
+                if constr[0]:
+                    self.COPAdj[verse.text].append(constr[1])
+
+        self.COPAdj = {k: v for k, v in self.COPAdj.items() if v}
+
+        return self.COPAdj
